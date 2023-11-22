@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="x-rim-auto-match" content="none">
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimum-scale=1.0, viewport-fit=cover" />
+</head>
+<body>
+<div>
+    使用方法：将网站上扒下来的svg标签代码段粘贴下方，先点转换，再点下载
+    <textarea style="width: 800px;height: 500px" id="text"></textarea>
+    <div id="down" style="color: red;width: 100px;height: 50px; line-height: 50px;text-align: center;background: deepskyblue;margin-bottom: 20px;cursor: pointer">转换</div>
+    <a href="" style="color: blue;width: 100px;height: 50px; line-height: 50px;text-align: center;background: deepskyblue;margin-bottom: 20px;display: block;cursor: pointer">下载png</a>
+    <a href="" style="color: blue;width: 100px;height: 50px; line-height: 50px;text-align: center;background: deepskyblue;display: block;cursor: pointer">下载svg</a>
+</div>
+
+</body>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+</style>
+<script>
+    const svgToPng = async (svgStr) => {
+        // 转换成blob数据
+        let blob = new Blob([svgStr], {
+            type: 'image/svg+xml'
+        })
+        // 转换成data:url数据
+        let svgUrl = await blobToUrl(blob)
+        // 绘制到canvas上
+        let imgData = await drawToCanvas(svgUrl)
+        downloadFile(imgData, '图片.png')
+
+    }
+    const svgToSvg = async (svgStr,fileType,fileName) => {
+        // 转换成blob数据
+        let pre = '<?xml version="1.0" encoding="UTF-8"?>'
+        let blob = new Blob([pre+svgStr], {
+            type: 'image/svg+xml;charset=utf-8'
+        })
+        let a = document.getElementsByTagName('a')[1]
+        a.download = fileName
+        a.href = URL.createObjectURL(blob);
+        a.dataset.downloadurl = [fileType, a.download, a.href].join(':');
+        // URL.revokeObjectURL(a.href)
+
+    }
+    const blobToUrl = (blob) => {
+        return new Promise((resolve, reject) => {
+            let reader = new FileReader()
+            reader.onload = evt => {
+                resolve(evt.target.result)
+            }
+            reader.onerror = err => {
+                reject(err)
+            }
+            reader.readAsDataURL(blob)
+        })
+    }
+    const drawToCanvas = (svgUrl) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image()
+            // 跨域图片需要添加这个属性，否则画布被污染了无法导出图片
+            img.setAttribute('crossOrigin', 'anonymous')
+            img.onload = async () => {
+                try {
+                    let canvas = document.createElement('canvas')
+                    canvas.width = img.width
+                    canvas.height = img.height
+                    let ctx = canvas.getContext('2d')
+                    ctx.drawImage(img, 0, 0, img.width, img.height)
+                    resolve(canvas.toDataURL())
+                } catch (error) {
+                    reject(error)
+                }
+            }
+            img.onerror = e => {
+                reject(e)
+            }
+            img.src = svgUrl
+        })
+    }
+    const downloadFile = (file, fileName) => {
+        let a = document.getElementsByTagName('a')[0]
+        a.href = file
+        a.download = fileName
+
+    }
+    document.getElementById('down').onclick=()=>{
+        let text = document.getElementById('text').value;
+        console.log(123,text)
+        svgToPng(text)
+        svgToSvg(text,'image/svg','mySvg')
+    }
+</script>
+</html>
